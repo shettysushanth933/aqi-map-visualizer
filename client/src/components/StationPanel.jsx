@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { X, Wind, Droplets, Flame, Leaf, CloudFog, Clock, MapPin, AlertTriangle } from 'lucide-react'
+import { X, Wind, Clock, MapPin, AlertTriangle } from 'lucide-react'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid } from 'recharts'
 
 // ─── AQI helpers ────────────────────────────────────────────────
 function getAqiColor(aqi) {
@@ -22,14 +23,73 @@ function getAqiLabel(aqi) {
     return 'Hazardous'
 }
 
-// Pollutant row config
+// Pollutant config for chart
 const POLLUTANTS = [
-    { key: 'pm25', label: 'PM2.5', unit: 'µg/m³', icon: Droplets, desc: 'Fine particulate matter' },
-    { key: 'pm10', label: 'PM10', unit: 'µg/m³', icon: CloudFog, desc: 'Coarse particles' },
-    { key: 'no2', label: 'NO₂', unit: 'ppb', icon: AlertTriangle, desc: 'Nitrogen dioxide' },
-    { key: 'co', label: 'CO', unit: 'ppm', icon: Flame, desc: 'Carbon monoxide' },
-    { key: 'o3', label: 'O₃', unit: 'ppb', icon: Leaf, desc: 'Ozone' },
+    { key: 'pm25', label: 'PM2.5', unit: 'µg/m³' },
+    { key: 'pm10', label: 'PM10', unit: 'µg/m³' },
+    { key: 'no2', label: 'NO₂', unit: 'ppb' },
+    { key: 'co', label: 'CO', unit: 'ppm' },
+    { key: 'o3', label: 'O₃', unit: 'ppb' },
+    { key: 'so2', label: 'SO₂', unit: 'ppb' },
 ]
+
+const BAR_COLORS = ['#22c55e', '#a3e635', '#eab308', '#f97316', '#ef4444', '#a855f7']
+
+function getHealthAdvice(aqi) {
+    if (aqi === null || aqi === undefined) {
+        return {
+            title: 'Limited data available',
+            description: 'We could not determine a reliable AQI value for this station. Use nearby stations as reference and follow general air quality precautions.',
+            level: 'info',
+        }
+    }
+
+    if (aqi <= 50) {
+        return {
+            title: 'Air quality is good',
+            description: 'Air quality is considered satisfactory. You can enjoy outdoor activities without restrictions.',
+            level: 'good',
+        }
+    }
+
+    if (aqi <= 100) {
+        return {
+            title: 'Moderate air quality',
+            description: 'Unusually sensitive individuals should consider reducing prolonged or heavy outdoor exertion.',
+            level: 'moderate',
+        }
+    }
+
+    if (aqi <= 150) {
+        return {
+            title: 'Unhealthy for sensitive groups',
+            description: 'People with respiratory or heart disease, children, and older adults should limit intense outdoor activities and monitor symptoms closely.',
+            level: 'elevated',
+        }
+    }
+
+    if (aqi <= 200) {
+        return {
+            title: 'Unhealthy air quality',
+            description: 'Everyone should reduce prolonged or heavy exertion outdoors. Sensitive groups should avoid outdoor activities where possible and consider using a mask rated for PM2.5.',
+            level: 'unhealthy',
+        }
+    }
+
+    if (aqi <= 300) {
+        return {
+            title: 'Very unhealthy conditions',
+            description: 'Avoid outdoor physical activity. Stay indoors with windows closed and use air purification if available. Masks are recommended if you must go outside.',
+            level: 'very-unhealthy',
+        }
+    }
+
+    return {
+        title: 'Hazardous air quality',
+        description: 'Serious health effects are possible for everyone. Avoid going outdoors, close windows and doors, and follow local health advisories. Use high-quality respirator masks if outdoor exposure is unavoidable.',
+        level: 'hazardous',
+    }
+}
 
 // ─── Component ───────────────────────────────────────────────────
 export default function StationPanel({ station, onClose }) {
@@ -68,6 +128,20 @@ export default function StationPanel({ station, onClose }) {
     const color = getAqiColor(detail?.aqi ?? station.aqi)
     const aqi = detail?.aqi ?? station.aqi
     const city = detail?.city ?? station.city
+    const healthAdvice = getHealthAdvice(aqi)
+
+    // Normalize pollutant data for chart (ensure positive numeric values)
+    const pollutantData = POLLUTANTS.map(({ key, label, unit }) => {
+        const raw = detail?.[key]
+        const numeric = raw === null || raw === undefined ? null : Number(raw)
+        const value = numeric !== null && !Number.isNaN(numeric) && numeric >= 0 ? numeric : null
+        return { key, label, unit, value }
+    }).filter(d => d.value !== null)
+
+    const maxPollutantValue = pollutantData.length
+        ? Math.max(...pollutantData.map(d => d.value))
+        : 0
+    const yAxisMax = maxPollutantValue === 0 ? 10 : Math.ceil(maxPollutantValue * 1.2)
 
     const handleClose = () => {
         setVisible(false)
@@ -118,7 +192,7 @@ export default function StationPanel({ station, onClose }) {
                 </div>
 
                 {/* ── Body ── */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
                     {/* AQI hero card */}
                     <div
@@ -154,6 +228,9 @@ export default function StationPanel({ station, onClose }) {
                         )}
                     </div>
 
+                    {/* Thin divider */}
+                    <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
                     {/* Error */}
                     {error && (
                         <div className="rounded-xl p-4 bg-red-900/30 border border-red-500/30 text-red-300 text-sm flex gap-2 items-start">
@@ -162,52 +239,91 @@ export default function StationPanel({ station, onClose }) {
                         </div>
                     )}
 
-                    {/* Pollutants */}
+                    {/* Pollutants chart */}
                     <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-widest mb-3">Pollutants</p>
-                        <div className="space-y-2">
-                            {POLLUTANTS.map(({ key, label, unit, icon: Icon, desc }) => {
-                                const value = detail?.[key]
-                                return (
-                                    <div
-                                        key={key}
-                                        className="flex items-center justify-between rounded-xl px-4 py-3"
-                                        style={{
-                                            background: 'rgba(255,255,255,0.04)',
-                                            border: '1px solid rgba(255,255,255,0.07)',
-                                        }}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div
-                                                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                                                style={{ background: 'rgba(59,130,246,0.15)' }}
-                                            >
-                                                <Icon size={15} className="text-blue-400" />
-                                            </div>
-                                            <div>
-                                                <p className="text-white text-sm font-semibold">{label}</p>
-                                                <p className="text-gray-500 text-xs">{desc}</p>
-                                            </div>
+                        <p className="text-xs text-gray-500 uppercase tracking-widest mb-3">Pollutant mix</p>
+                        <div className="rounded-2xl px-3 py-3 bg-slate-950/80 border border-slate-600/40 shadow-[0_18px_45px_rgba(0,0,0,0.65)]">
+                            {loading ? (
+                                <div className="h-40 flex items-center justify-center">
+                                    <div className="h-4 w-32 rounded bg-gray-700 animate-pulse" />
+                                </div>
+                            ) : (
+                                <>
+                                    {pollutantData.length > 0 ? (
+                                        <div className="h-44">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart
+                                                    data={pollutantData}
+                                                    margin={{ top: 8, right: 8, left: -18, bottom: 8 }}
+                                                >
+                                                    <defs>
+                                                        <linearGradient id="pollutantBar" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.95} />
+                                                            <stop offset="100%" stopColor="#6366f1" stopOpacity={0.9} />
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <CartesianGrid stroke="rgba(148,163,184,0.18)" strokeDasharray="3 3" vertical={false} />
+                                                    <XAxis
+                                                        dataKey="label"
+                                                        tickLine={false}
+                                                        axisLine={false}
+                                                        tick={{ fill: '#9CA3AF', fontSize: 10 }}
+                                                    />
+                                                    <YAxis
+                                                        tickLine={false}
+                                                        axisLine={false}
+                                                        tick={{ fill: '#6B7280', fontSize: 10 }}
+                                                        domain={[0, yAxisMax]}
+                                                        allowDecimals={false}
+                                                        width={32}
+                                                    />
+                                                    <Tooltip
+                                                        cursor={{ fill: 'rgba(148,163,184,0.10)' }}
+                                                        contentStyle={{
+                                                            backgroundColor: '#020617',
+                                                            borderRadius: 8,
+                                                            border: '1px solid rgba(148,163,184,0.4)',
+                                                            padding: '6px 10px',
+                                                        }}
+                                                        labelStyle={{ color: '#E5E7EB', fontSize: 12, marginBottom: 4 }}
+                                                        formatter={(value, _name, props) => {
+                                                            const unit = props.payload.unit
+                                                            return [`${Number(value).toFixed(1)} ${unit}`, '']
+                                                        }}
+                                                    />
+                                                    <Bar dataKey="value" radius={[6, 6, 0, 0]} isAnimationActive animationDuration={500}>
+                                                        {pollutantData.map((entry, index) => (
+                                                            <Cell key={entry.key} fill={BAR_COLORS[index % BAR_COLORS.length]} />
+                                                        ))}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
                                         </div>
-                                        <div className="text-right">
-                                            {loading ? (
-                                                <div className="h-4 w-12 rounded bg-gray-700 animate-pulse" />
-                                            ) : (
-                                                <>
-                                                    <span className="text-white font-bold text-sm">
-                                                        {value !== null && value !== undefined ? value.toFixed(1) : '—'}
-                                                    </span>
-                                                    {value !== null && value !== undefined && (
-                                                        <span className="text-gray-500 text-xs ml-1">{unit}</span>
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                )
-                            })}
+                                    ) : (
+                                        <p className="text-xs text-gray-500 text-center py-6">
+                                            No pollutant breakdown is available for this station.
+                                        </p>
+                                    )}
+                                </>
+                            )}
                         </div>
                     </div>
+
+                    {/* Health recommendations */}
+                    {healthAdvice && (
+                        <div className="rounded-2xl px-4 py-4 flex gap-3 bg-slate-950/80 border border-white/10 shadow-[0_18px_45px_rgba(0,0,0,0.65)]">
+                            <div className="mt-0.5">
+                                <AlertTriangle size={18} style={{ color }} />
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-xs text-gray-400 uppercase tracking-widest">Health Recommendations</p>
+                                <p className="text-sm font-semibold text-gray-100">{healthAdvice.title}</p>
+                                <p className="text-xs text-gray-400 leading-relaxed">
+                                    {healthAdvice.description}
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Last updated */}
                     {(detail?.lastUpdated || loading) && (
