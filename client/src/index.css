@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-dark-800: #1f2937;
+  --color-dark-900: #111827;
+  --color-dark-950: #030712;
+}
+
+body {
+  margin: 0;
+  font-family: inherit;
+}
+
+/* Leaflet dark theme tweaks */
+.leaflet-container {
+  background: #030712;
+  outline: none;
+}
+
+.leaflet-bar a {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+  border-color: #374151 !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: #374151 !important;
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #1f2937 !important;
+  color: #fff !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5) !important;
+}
