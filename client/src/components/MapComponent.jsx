@@ -54,16 +54,17 @@ function HeatmapLayer({ points }) {
     return null
 }
 
-function MapFocus({ focusLocation }) {
+function MapFocus({ mapView }) {
     const map = useMap()
 
     useEffect(() => {
-        if (!map || !focusLocation) return
-        const { lat, lng } = focusLocation
-        if (typeof lat !== 'number' || typeof lng !== 'number') return
+        if (!map || !mapView) return
+        const { center, zoom } = mapView
+        if (!center || typeof center[0] !== 'number') return
 
-        map.flyTo([lat, lng], 13, { duration: 1.2 })
-    }, [map, focusLocation])
+        // Use the passed zoom, or default to 13 for stations
+        map.flyTo(center, zoom || 13, { duration: 1.2 })
+    }, [map, mapView])
 
     return null
 }
@@ -75,7 +76,7 @@ export default function MapComponent({
     countdown,
     onRefresh,
     onCitySelect,
-    focusLocation,
+    mapView, // --- RENAME PROP TO mapView ---
 }) {
     const [viewMode, setViewMode] = useState('markers') // 'markers' | 'heatmap'
 
@@ -143,17 +144,18 @@ export default function MapComponent({
             )}
 
             <MapContainer
-                center={[19.0760, 72.8777]}
-                zoom={11}
+                center={[20.5937, 78.9629]} // India center
+                zoom={5}
                 className="w-full h-full"
-                zoomControl={true}
+                zoomControl={false}
             >
                 <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 />
-                {/* Move map focus when a station is selected externally */}
-                <MapFocus focusLocation={focusLocation} />
+                
+                {/* --- UPDATE THIS LINE --- */}
+                <MapFocus mapView={mapView} />
 
                 {/* Heatmap view */}
                 {viewMode === 'heatmap' && (

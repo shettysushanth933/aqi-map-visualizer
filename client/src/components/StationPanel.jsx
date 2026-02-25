@@ -150,19 +150,19 @@ export default function StationPanel({ station, onClose }) {
 
     return (
         <div
-            className="absolute top-0 right-0 h-full z-[2000] flex items-stretch pointer-events-none"
-            style={{ width: '360px' }}
+            className="absolute bottom-0 right-0 w-full md:w-[360px] h-[60%] md:h-full z-[2000] flex items-stretch pointer-events-none"
         >
             <div
-                className="pointer-events-auto h-full w-full flex flex-col"
+                className={`pointer-events-auto h-full w-full flex flex-col transition-transform duration-300 ease-in-out ${
+                    visible ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-y-0 md:translate-x-full'
+                }`}
                 style={{
                     background: 'linear-gradient(135deg, rgba(17,24,39,0.85) 0%, rgba(31,41,55,0.80) 100%)',
                     backdropFilter: 'blur(20px)',
                     WebkitBackdropFilter: 'blur(20px)',
                     borderLeft: '1px solid rgba(255,255,255,0.08)',
+                    borderTop: '1px solid rgba(255,255,255,0.08)', // for mobile
                     boxShadow: '-8px 0 32px rgba(0,0,0,0.5)',
-                    transform: visible ? 'translateX(0)' : 'translateX(100%)',
-                    transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
             >
                 {/* ── Header ── */}
@@ -196,25 +196,27 @@ export default function StationPanel({ station, onClose }) {
 
                     {/* AQI hero card */}
                     <div
-                        className="rounded-2xl p-5 relative overflow-hidden"
+                        className="rounded-2xl p-5 relative overflow-hidden transition-colors duration-500"
                         style={{
-                            background: `linear-gradient(135deg, ${color}22, ${color}10)`,
-                            border: `1px solid ${color}44`,
+                            background: loading ? 'rgba(31, 41, 55, 0.5)' : `linear-gradient(135deg, ${color}22, ${color}10)`,
+                            border: loading ? '1px solid rgba(255,255,255,0.05)' : `1px solid ${color}44`,
                         }}
                     >
                         {/* Glow blob */}
-                        <div
-                            className="absolute -top-6 -right-6 w-28 h-28 rounded-full opacity-20 blur-2xl"
-                            style={{ background: color }}
-                        />
+                        {!loading && (
+                            <div
+                                className="absolute -top-6 -right-6 w-28 h-28 rounded-full opacity-20 blur-2xl transition-all duration-500"
+                                style={{ background: color }}
+                            />
+                        )}
                         <div className="flex items-center gap-2 mb-3">
-                            <Wind size={18} style={{ color }} />
+                            <Wind size={18} style={{ color: loading ? '#6b7280' : color }} />
                             <span className="text-gray-300 text-sm font-medium">Air Quality Index</span>
                         </div>
                         {loading ? (
-                            <div className="flex items-center gap-3">
-                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style={{ borderColor: color }} />
-                                <span className="text-gray-400 text-sm">Loading…</span>
+                            <div className="space-y-3">
+                                <div className="h-14 w-24 bg-gray-700/50 rounded-lg animate-pulse" />
+                                <div className="h-4 w-32 bg-gray-700/50 rounded animate-pulse" />
                             </div>
                         ) : (
                             <>

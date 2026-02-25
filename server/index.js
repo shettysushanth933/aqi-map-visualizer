@@ -67,8 +67,10 @@ app.get('/api/aqi', async (req, res) => {
       });
     }
 
-    // Mumbai bounding box (south,west,north,east)
-    const bounds = '18.8929,72.7758,19.2714,73.0699';
+    // Read bounds from the query string (e.g. /api/aqi?bounds=18.89,72.77,19.27,73.06)
+    // Fallback to Mumbai bounding box if no query is provided
+    const bounds = req.query.bounds || '18.8929,72.7758,19.2714,73.0699';
+    
     const url = `https://api.waqi.info/map/bounds/?latlng=${bounds}&networks=all&token=${apiKey}`;
 
     const response = await fetch(url, { headers: { Accept: 'application/json' } });
