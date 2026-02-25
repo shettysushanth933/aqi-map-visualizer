@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { X, Wind, Clock, MapPin, AlertTriangle } from 'lucide-react'
+import { X, Wind, Clock, MapPin, AlertTriangle, Eye, Sun } from 'lucide-react'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid } from 'recharts'
 
 // ─── AQI helpers ────────────────────────────────────────────────
@@ -97,6 +97,7 @@ export default function StationPanel({ station, onClose }) {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
     const [visible, setVisible] = useState(false)
+    const [selectedPollutant, setSelectedPollutant] = useState(null)
 
     // Animate in
     useEffect(() => {
@@ -112,6 +113,7 @@ export default function StationPanel({ station, onClose }) {
         setLoading(true)
         setDetail(null)
         setError(null)
+        setSelectedPollutant(null)
 
         fetch(`/api/aqi/${station.id}`)
             .then(res => res.json())
@@ -293,9 +295,19 @@ export default function StationPanel({ station, onClose }) {
                                                             return [`${Number(value).toFixed(1)} ${unit}`, '']
                                                         }}
                                                     />
-                                                    <Bar dataKey="value" radius={[6, 6, 0, 0]} isAnimationActive animationDuration={500}>
+                                                    <Bar 
+                                                        dataKey="value" 
+                                                        radius={[6, 6, 0, 0]} 
+                                                        isAnimationActive 
+                                                        animationDuration={500}
+                                                        onClick={(data) => setSelectedPollutant(data.payload || data)}
+                                                    >
                                                         {pollutantData.map((entry, index) => (
-                                                            <Cell key={entry.key} fill={BAR_COLORS[index % BAR_COLORS.length]} />
+                                                            <Cell 
+                                                                key={entry.key} 
+                                                                fill={BAR_COLORS[index % BAR_COLORS.length]} 
+                                                                cursor="pointer" 
+                                                            />
                                                         ))}
                                                     </Bar>
                                                 </BarChart>
@@ -309,6 +321,84 @@ export default function StationPanel({ station, onClose }) {
                                 </>
                             )}
                         </div>
+
+                        {/* Interactive Click Results & Visibility/Brightness block */}
+                        {!loading && pollutantData.length > 0 && (
+                            <div className="space-y-3 mt-4">
+                                {/* Selected Pollutant Score */}
+                                <div className="rounded-xl px-4 py-3 border border-white/10 flex flex-col justify-center transition-colors"
+                                     style={{ background: selectedPollutant ? 'rgba(31,41,55,0.8)' : 'rgba(31,41,55,0.3)' }}>
+                                    {selectedPollutant ? (
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <p className="text-[10px] text-gray-400 uppercase tracking-widest">{selectedPollutant.label} Score</p>
+                                                <div className="mt-1 flex items-baseline">
+                                                    <span className="text-xl font-black text-white">{Number(selectedPollutant.value).toFixed(1)}</span>
+                                                    <span className="text-xs text-gray-500 ml-1">{selectedPollutant.unit}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-gray-500 text-center my-auto">
+                                            Click a bar in the chart to see exact scores
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Visibility & Brightness Requirements */}
+                                {(() => {
+                                    // Use actual visibility if available, otherwise estimate using PM2.5 formula
+                                    const pm25Val = detail?.pm25 ?? 0;
+                                    const actualVis = detail?.visibility;
+                                    const visibilityKm = actualVis !== null && actualVis !== undefined 
+                                        ? Number(actualVis).toFixed(1)
+                                        : (Math.min(25, 1000 / (pm25Val + 10))).toFixed(1);
+
+                                    let brightnessNeed = 'Normal';
+                                    let brightnessDesc = 'Clear enough for normal natural daylight.';
+                                    let iconColor = '#22c55e'; // Green
+
+                                    if (visibilityKm < 2) {
+                                        brightnessNeed = 'High';
+                                        brightnessDesc = 'Dense smog/fog. High artificial brightness & fog lights needed.';
+                                        iconColor = '#ef4444'; // Red
+                                    } else if (visibilityKm < 5) {
+                                        brightnessNeed = 'Moderate';
+                                        brightnessDesc = 'Reduced visibility. Supplemental lighting recommended.';
+                                        iconColor = '#f97316'; // Orange
+                                    } else if (visibilityKm < 10) {
+                                        brightnessNeed = 'Low';
+                                        brightnessDesc = 'Slight haze. Regular lighting is sufficient.';
+                                        iconColor = '#eab308'; // Yellow
+                                    }
+
+                                    return (
+                                        <div className="rounded-2xl px-4 py-4 flex flex-col gap-3 bg-slate-950/80 border border-white/10 shadow-[0_18px_45px_rgba(0,0,0,0.65)]">
+                                            <p className="text-[10px] text-gray-400 uppercase tracking-widest">Visibility & Illumination</p>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="flex items-start gap-3">
+                                                    <Eye size={18} className="text-blue-400 mt-0.5 shrink-0" />
+                                                    <div>
+                                                        <p className="text-xs text-gray-500">Est. Visibility</p>
+                                                        <p className="text-sm font-semibold text-gray-100">{visibilityKm} km</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-start gap-3">
+                                                    <Sun size={18} style={{ color: iconColor }} className="mt-0.5 shrink-0" />
+                                                    <div>
+                                                        <p className="text-xs text-gray-500">Brightness Need</p>
+                                                        <p className="text-sm font-semibold text-gray-100">{brightnessNeed}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-gray-400 leading-relaxed mt-1">
+                                                {brightnessDesc}
+                                            </p>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        )}
                     </div>
 
                     {/* Health recommendations */}

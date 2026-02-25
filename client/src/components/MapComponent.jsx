@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L, { divIcon } from 'leaflet'
+import { Eye, Sun } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
 import 'leaflet.heat'
 
@@ -23,6 +24,31 @@ function getAqiLabel(aqi) {
     if (aqi <= 200) return 'Unhealthy'
     if (aqi <= 300) return 'Very Unhealthy'
     return 'Hazardous'
+}
+
+function getVisibilityData(station) {
+    let pm25 = station.pm25;
+    
+    // If exact PM2.5 isn't available on the map layer, approximate using US EPA formula
+    if (pm25 === null || pm25 === undefined) {
+        const aqi = station.aqi || 0;
+        if (aqi <= 50) pm25 = (aqi / 50) * 12.0;
+        else if (aqi <= 100) pm25 = 12.1 + ((aqi - 51) / 49) * 23.3;
+        else if (aqi <= 150) pm25 = 35.5 + ((aqi - 101) / 49) * 19.9;
+        else if (aqi <= 200) pm25 = 55.5 + ((aqi - 151) / 49) * 94.9;
+        else if (aqi <= 300) pm25 = 150.5 + ((aqi - 201) / 99) * 99.9;
+        else pm25 = 250.5 + ((aqi - 301) / 199) * 249.9;
+    }
+
+    const visKm = Math.min(25, 1000 / (pm25 + 10)).toFixed(1);
+    
+    let brightness = 'Normal';
+    let bColor = '#22c55e'; // Green
+    if (visKm < 2) { brightness = 'High'; bColor = '#ef4444'; }
+    else if (visKm < 5) { brightness = 'Moderate'; bColor = '#f97316'; }
+    else if (visKm < 10) { brightness = 'Low'; bColor = '#eab308'; }
+
+    return { visKm, brightness, bColor };
 }
 
 // Heatmap layer helper component
@@ -210,21 +236,56 @@ export default function MapComponent({
                             }}
                         >
                             <Popup>
-                                <div style={{ background: '#1f2937', color: '#fff', borderRadius: 8, padding: '10px 14px', minWidth: 180 }}>
-                                    <p style={{ fontWeight: 700, marginBottom: 4 }}>{station.city}</p>
-                                    <p style={{ fontSize: 13, color: '#9ca3af' }}>
-                                        AQI: <span style={{ color, fontWeight: 700 }}>{station.aqi ?? '—'}</span>
+                                <div className="flex flex-col min-w-[200px] cursor-pointer" onClick={() => onCitySelect(station)}>
+                                    {/* Header: City Name & AQI Badge */}
+                                    <div className="flex justify-between items-start gap-3 mb-1">
+                                        <h3 className="font-bold text-gray-100 text-[15px] leading-tight pr-2 m-0 hover:text-blue-400 transition-colors">
+                                            {station.city}
+                                        </h3>
+                                        <div 
+                                            className="px-2 py-0.5 rounded text-[11px] font-extrabold text-white shadow-sm shrink-0 mt-0.5"
+                                            style={{ backgroundColor: color }}
+                                        >
+                                            AQI {station.aqi ?? '—'}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Health Label */}
+                                    <p className="text-xs font-medium m-0 mb-3" style={{ color }}>
+                                        {getAqiLabel(station.aqi)}
                                     </p>
-                                    <p style={{ fontSize: 12, color: '#9ca3af' }}>{getAqiLabel(station.aqi)}</p>
-                                    {station.pm25 !== null && station.pm25 !== undefined && (
-                                        <p style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>PM2.5: {station.pm25} µg/m³</p>
-                                    )}
-                                    <button
-                                        style={{ marginTop: 8, fontSize: 12, background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', width: '100%' }}
-                                        onClick={(e) => { e.stopPropagation(); onCitySelect(station); }}
-                                    >
-                                        View Details
-                                    </button>
+
+                                    {/* Calculated Visibility & Brightness block */}
+                                    {(() => {
+                                        const { visKm, brightness, bColor } = getVisibilityData(station);
+                                        return (
+                                            <div className="grid grid-cols-2 gap-2 mt-1 pt-3 border-t border-white/10">
+                                                <div className="bg-gray-800/60 rounded-lg p-2 border border-white/5 flex flex-col justify-center">
+                                                    <div className="flex items-center gap-1.5 text-gray-400 mb-1">
+                                                        <Eye size={12} className="text-blue-400" />
+                                                        <span className="text-[9px] uppercase tracking-widest font-medium">Visibility</span>
+                                                    </div>
+                                                    <p className="text-sm font-bold text-gray-100 m-0 leading-none">
+                                                        {visKm} <span className="text-[10px] text-gray-500 font-normal">km</span>
+                                                    </p>
+                                                </div>
+                                                
+                                                <div className="bg-gray-800/60 rounded-lg p-2 border border-white/5 flex flex-col justify-center">
+                                                    <div className="flex items-center gap-1.5 text-gray-400 mb-1">
+                                                        <Sun size={12} style={{ color: bColor }} />
+                                                        <span className="text-[9px] uppercase tracking-widest font-medium">Brightness</span>
+                                                    </div>
+                                                    <p className="text-sm font-bold text-gray-100 m-0 leading-none">
+                                                        {brightness}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+                                    
+                                    <p className="text-[10px] text-gray-500 text-center mt-3 mb-0 uppercase tracking-widest">
+                                        Click popup for full data
+                                    </p>
                                 </div>
                             </Popup>
                         </Marker>

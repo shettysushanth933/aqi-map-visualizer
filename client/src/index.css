@@ -90,3 +90,31 @@ body {
   box-shadow: 0 8px 20px rgba(0,0,0,0.9) !important;
   z-index: 1000 !important;
 }
+
+/* client/src/index.css */
+
+/* Dark mode overrides for Leaflet Popups */
+.leaflet-popup-content-wrapper, 
+.leaflet-popup-tip {
+  background: rgba(17, 24, 39, 0.95) !important; /* Tailwind gray-900 */
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f3f4f6 !important;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.7) !important;
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px !important;
+  min-width: 200px !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  color: #9ca3af !important;
+  padding: 6px !important;
+  transition: color 0.2s;
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+  color: #ffffff !important;
+  background: transparent !important;
+}
