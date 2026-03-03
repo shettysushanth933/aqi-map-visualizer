@@ -1,0 +1,98 @@
+﻿
+> client@1.0.0 build
+> vite build
+
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 3 modules transformed.
+node.exe : [31mx[39m 
+Build failed in 640ms
+At C:\Program Files\nod
+ejs\npm.ps1:29 char:3
++   & $NODE_EXE 
+$NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: ([31mx[39m B   
+ uild failed in 640    
+ms:String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+[31merror during 
+build:
+[31m[vite]: Rollup 
+failed to resolve 
+import "leaflet/dist/le
+aflet.css" from "C:/Use
+rs/psoha/OneDrive/Deskt
+op/aqi-map-visualizer/c
+lient/src/main.jsx".
+This is most likely 
+unintended because it 
+can break your 
+application at runtime.
+If you do want to 
+externalize this 
+module explicitly add 
+it to
+`build.rollupOptions.ex
+ternal`[31m
+    at viteWarn (file:/
+//C:/Users/psoha/OneDri
+ve/Desktop/aqi-map-visu
+alizer/client/node_modu
+les/vite/dist/node/chun
+ks/dep-BK3b2jBa.js:6585
+5:17)
+    at onwarn (file:///
+C:/Users/psoha/OneDrive
+/Desktop/aqi-map-visual
+izer/client/node_module
+s/@vitejs/plugin-react/
+dist/index.js:90:7)
+    at onRollupWarning 
+(file:///C:/Users/psoha
+/OneDrive/Desktop/aqi-m
+ap-visualizer/client/no
+de_modules/vite/dist/no
+de/chunks/dep-BK3b2jBa.
+js:65885:5)
+    at onwarn (file:///
+C:/Users/psoha/OneDrive
+/Desktop/aqi-map-visual
+izer/client/node_module
+s/vite/dist/node/chunks
+/dep-BK3b2jBa.js:65550:
+7)
+    at file:///C:/Users
+/psoha/OneDrive/Desktop
+/aqi-map-visualizer/cli
+ent/node_modules/rollup
+/dist/es/shared/node-en
+try.js:20995:13
+    at Object.logger 
+[as onLog] (file:///C:/
+Users/psoha/OneDrive/De
+sktop/aqi-map-visualize
+r/client/node_modules/r
+ollup/dist/es/shared/no
+de-entry.js:22968:9)
+    at ModuleLoader.han
+dleInvalidResolvedId (f
+ile:///C:/Users/psoha/O
+neDrive/Desktop/aqi-map
+-visualizer/client/node
+_modules/rollup/dist/es
+/shared/node-entry.js:2
+1712:26)
+    at file:///C:/Users
+/psoha/OneDrive/Desktop
+/aqi-map-visualizer/cli
+ent/node_modules/rollup
+/dist/es/shared/node-en
+try.js:21670:26[39m

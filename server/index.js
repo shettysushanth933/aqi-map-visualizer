@@ -186,6 +186,115 @@ app.get('/api/aqi/:stationId', async (req, res) => {
   }
 });
 
+// Mapping for WMO weather codes to string descriptions and emojis
+function getWeatherInfo(code) {
+  if (code === 0) return { text: 'Clear Sky', icon: '☀️' };
+  if ([1, 2, 3].includes(code)) return { text: 'Partly Cloudy', icon: '⛅' };
+  if ([45, 48].includes(code)) return { text: 'Fog', icon: '🌫️' };
+  if ([51, 53, 55, 56, 57].includes(code)) return { text: 'Drizzle', icon: '🌦️' };
+  if ([61, 63, 65, 66, 67].includes(code)) return { text: 'Rain', icon: '🌧️' };
+  if ([71, 73, 75, 77].includes(code)) return { text: 'Snow', icon: '🌨️' };
+  if ([80, 81, 82].includes(code)) return { text: 'Rain Showers', icon: '🌦️' };
+  if ([85, 86].includes(code)) return { text: 'Snow Showers', icon: '🌨️' };
+  if ([95, 96, 99].includes(code)) return { text: 'Thunderstorm', icon: '⛈️' };
+  return { text: 'Unknown', icon: '❓' };
+}
+
+// Weather API Endpoint using Open-Meteo (Free, No API Key)
+app.get('/api/weather', async (req, res) => {
+  try {
+    // Expanded to 20+ key locations across the Mumbai Metropolitan Region (MMR)
+    const stations = [
+      { id: 'w1', name: 'Colaba', coordinates: [72.8150, 18.9067] },
+      { id: 'w2', name: 'Santacruz', coordinates: [72.8397, 19.0805] },
+      { id: 'w3', name: 'Borivali', coordinates: [72.8566, 19.2307] },
+      { id: 'w4', name: 'Navi Mumbai', coordinates: [72.9981, 19.0771] },
+      { id: 'w5', name: 'Thane', coordinates: [72.9781, 19.2183] },
+      { id: 'w6', name: 'Bandra', coordinates: [72.8333, 19.0544] },
+      { id: 'w7', name: 'Andheri', coordinates: [72.8397, 19.1136] },
+      { id: 'w8', name: 'Malad', coordinates: [72.8446, 19.1860] },
+      { id: 'w9', name: 'Kurla', coordinates: [72.8774, 19.0728] },
+      { id: 'w10', name: 'Panvel', coordinates: [73.1111, 18.9894] },
+      { id: 'w11', name: 'Kalyan', coordinates: [73.1305, 19.2403] },
+      { id: 'w12', name: 'Vasai', coordinates: [72.8051, 19.3919] },
+      { id: 'w13', name: 'Virar', coordinates: [72.8105, 19.4589] },
+      { id: 'w14', name: 'Bhiwandi', coordinates: [73.0578, 19.2995] },
+      { id: 'w15', name: 'Ulhasnagar', coordinates: [73.1601, 19.2215] },
+      { id: 'w16', name: 'Dombivli', coordinates: [73.0883, 19.2185] },
+      { id: 'w17', name: 'Mira Road', coordinates: [72.8595, 19.2841] },
+      { id: 'w18', name: 'Powai', coordinates: [72.9051, 19.1176] },
+      { id: 'w19', name: 'Goregaon', coordinates: [72.8464, 19.1663] },
+      { id: 'w20', name: 'Chembur', coordinates: [72.8953, 19.0494] },
+      { id: 'w21', name: 'Mulund', coordinates: [72.9575, 19.1718] },
+      { id: 'w22', name: 'Dahisar', coordinates: [72.8631, 19.2541] },
+      { id: 'w23', name: 'Ghatkopar', coordinates: [72.9103, 19.0838] },
+      { id: 'w24', name: 'Worli', coordinates: [72.8160, 19.0160] }
+    ];
+
+    const weatherData = await Promise.all(
+      stations.map(async (st) => {
+        const lat = st.coordinates[1];
+        const lng = st.coordinates[0];
+        
+        // Fetch current + hourly forecast for 24h
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,precipitation,weather_code&hourly=temperature_2m&forecast_days=2`;
+        
+        try {
+          const response = await fetch(url);
+          const data = await response.json();
+          
+          if (data.error) {
+              throw new Error('Open-Meteo Error');
+          }
+
+          // We extract the next 24 hours of forecast for the chart
+          // Open-meteo returns all hours for the days requested. We slice from the current hour.
+          const currentHourStr = data.current.time.slice(0, 14) + "00"; // gets "YYYY-MM-DDTHH:00"
+          let startIndex = data.hourly.time.indexOf(currentHourStr);
+          if (startIndex === -1) startIndex = 0; // fallback
+          
+          const forecastTimes = data.hourly.time.slice(startIndex, startIndex + 24);
+          const forecastTemps = data.hourly.temperature_2m.slice(startIndex, startIndex + 24);
+          
+          const forecast24h = forecastTimes.map((t, idx) => ({
+             time: t,
+             temp: forecastTemps[idx]
+          }));
+
+          const weatherInfo = getWeatherInfo(data.current.weather_code);
+
+          return {
+            id: st.id,
+            name: st.name,
+            coordinates: st.coordinates, // [lng, lat] expected by map
+            temperature: data.current.temperature_2m,
+            condition: weatherInfo.text,
+            icon: weatherInfo.icon,
+            precipitation: data.current.precipitation,
+            forecast24h: forecast24h // Trend data
+          };
+        } catch (e) {
+            console.error(`Failed to fetch weather for ${st.name}:`, e.message);
+            // Fallback for this station if API fails
+            return {
+              ...st,
+              temperature: 28, // generic fallback
+              condition: 'Clear Sky',
+              icon: '☀️',
+              forecast24h: []
+            };
+        }
+      })
+    );
+
+    res.json(weatherData);
+
+  } catch (err) {
+    console.error('Error fetching weather:', err.message);
+    res.status(500).json({ error: 'Server error', details: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
