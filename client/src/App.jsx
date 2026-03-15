@@ -156,6 +156,8 @@ function App() {
                     countdown={countdown}
                     onRefresh={fetchData}
                     onFeatureSelect={handleFeatureSelect}
+                    selectedFeature={selectedFeature}
+                    selectedFeatureType={featureType}
                 />
             </div>
 
