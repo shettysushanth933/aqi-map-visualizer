@@ -61,3 +61,16 @@ Open the URL Vite prints (usually `http://localhost:3000`).
 - The frontend uses a Vite **proxy** so that all `/api/*` requests are forwarded to the Express backend.
 - The backend talks to WAQI and normalizes the response so the frontend never calls WAQI directly.
 
+RUN THE APP
+
+Start Python Backend:
+cd c:\Users\Divya\Desktop\sush_repo\aqi-map-visualizer\traffic-server
+python main.py
+
+Start Node.js Backend:
+cd c:\Users\Divya\Desktop\sush_repo\aqi-map-visualizer\server
+node index.js
+
+Start Frontend:
+cd c:\Users\Divya\Desktop\sush_repo\aqi-map-visualizer\client
+npm run dev
