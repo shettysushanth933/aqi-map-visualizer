@@ -155,6 +155,7 @@ async def call_arcgis_routing(origin_lon: float, origin_lat: float, dest_lon: fl
     data = r.json()
     
     if "error" in data:
+        print(f"ArcGIS Error Data: {json.dumps(data, indent=2)}")
         raise HTTPException(status_code=400, detail=data["error"].get("message", "ArcGIS Routing Error"))
         
     return data

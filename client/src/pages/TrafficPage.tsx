@@ -103,15 +103,7 @@ export default function TrafficPage() {
             glow:  activeHazards > 0 ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.08)',
             pulse: activeHazards > 0,
         },
-        {
-            label: 'OSRM Engine',
-            value: apiStatus === 'online' ? 'Online' : apiStatus === 'offline' ? 'Offline' : '…',
-            sub:   'Routing Service',
-            Icon:  Cpu,
-            color: apiStatus === 'online' ? '#10b981' : '#ef4444',
-            glow:  apiStatus === 'online' ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
-            pulse: apiStatus === 'checking',
-        },
+
         {
             label: 'Route ETA',
             value: durationMin ? `${durationMin} min` : '—',
@@ -209,47 +201,7 @@ export default function TrafficPage() {
                         onWeatherSimulated={handleWeatherSimulated}
                     />
 
-                    {/* System status card */}
-                    <div className={`${GLASS} p-4 shrink-0 space-y-2.5`}>
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-[0.18em] flex items-center gap-2">
-                            <Signal className="w-3 h-3" /> System Status
-                        </p>
-                        {[
-                            { label: 'OSRM Router',   ok: apiStatus === 'online', note: 'router.project-osrm.org' },
-                            { label: 'Hazard Engine', ok: apiStatus === 'online', note: 'FastAPI :8001'           },
-                            { label: 'Nominatim',     ok: true,                   note: 'OpenStreetMap'           },
-                        ].map(({ label, ok, note }) => (
-                            <div key={label} className="flex items-center justify-between px-3 py-2 bg-white/5 hover:bg-white/[0.07] rounded-xl transition-all">
-                                <div>
-                                    <span className="text-[11px] text-gray-300 font-medium">{label}</span>
-                                    <p className="text-[9px] text-gray-600">{note}</p>
-                                </div>
-                                <span
-                                    className="text-[9px] font-black uppercase px-2 py-0.5 rounded-lg"
-                                    style={{
-                                        color:           ok ? '#10b981' : '#ef4444',
-                                        background:      ok ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                                    }}
-                                >
-                                    {ok ? 'Online' : 'Offline'}
-                                </span>
-                            </div>
-                        ))}
 
-                        {/* Engine load bar */}
-                        <div className="pt-1">
-                            <div className="flex justify-between text-[9px] text-gray-600 uppercase font-bold mb-1.5">
-                                <span>Engine Load</span>
-                                <span className="text-emerald-500">24%</span>
-                            </div>
-                            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full w-[24%] rounded-full"
-                                    style={{ background: 'linear-gradient(90deg,#10b981,#0891b2)', boxShadow: '0 0 8px rgba(16,185,129,0.5)' }}
-                                />
-                            </div>
-                        </div>
-                    </div>
 
                 </div>
             </div>
