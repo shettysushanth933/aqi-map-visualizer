@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
-import { Wind, Search, X as CloseIcon, Car, CloudRain, Waves } from 'lucide-react'
+import { Wind, Search, X as CloseIcon, Car, CloudRain, Waves, Navigation } from 'lucide-react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 
 // --- REGIONS ---
 const REGIONS = [
@@ -21,6 +22,8 @@ export default function Sidebar({
 }) {
     const [query, setQuery] = useState('')
     const [currentRegionName, setCurrentRegionName] = useState('Mumbai (MMR)')
+    const navigate = useNavigate();
+    const location = useLocation();
 
     const normalizedQuery = query.trim().toLowerCase()
 
@@ -162,7 +165,7 @@ export default function Sidebar({
 
     const layerConfig = [
         { id: 'aqi', label: 'Air Quality (AQI)', icon: Wind, color: 'text-blue-400', activeColor: 'bg-blue-500/20 border-blue-500/50 text-blue-400' },
-        { id: 'traffic', label: 'Traffic Congestion', icon: Car, color: 'text-amber-400', activeColor: 'bg-amber-500/20 border-amber-500/50 text-amber-400' },
+        // { id: 'traffic', label: 'Traffic Congestion', icon: Car, color: 'text-amber-400', activeColor: 'bg-amber-500/20 border-amber-500/50 text-amber-400' },
         { id: 'weather', label: 'Weather & Temp', icon: CloudRain, color: 'text-cyan-400', activeColor: 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400' },
         { id: 'flood', label: 'Flood Warnings', icon: Waves, color: 'text-indigo-400', activeColor: 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' }
     ];
@@ -194,7 +197,13 @@ export default function Sidebar({
                             return (
                                 <button
                                     key={layer.id}
-                                    onClick={() => onToggleLayer(layer.id)}
+                                    onClick={() => {
+                                        if (location.pathname === '/traffic') {
+                                            navigate('/');
+                                        } else if (onToggleLayer) {
+                                            onToggleLayer(layer.id);
+                                        }
+                                    }}
                                     className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-300 ${isActive
                                         ? layer.activeColor
                                         : 'bg-gray-900/40 border-white/5 text-gray-400 hover:border-white/20'
@@ -205,6 +214,13 @@ export default function Sidebar({
                                 </button>
                             );
                         })}
+                        <Link
+                            to="/traffic"
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-300 ${location.pathname === '/traffic' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-gray-900/40 border-white/5 text-gray-400 hover:border-white/20'}`}
+                        >
+                            <Navigation size={20} className={`mb-2 ${location.pathname === '/traffic' ? '' : 'text-emerald-400'}`} />
+                            <span className="text-[10px] sm:text-xs font-medium text-center">Traffic & Routing</span>
+                        </Link>
                     </div>
                 </div>
 

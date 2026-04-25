@@ -2,9 +2,13 @@ node_modules/
 client/node_modules/
 server/node_modules/
 
-# Environment files
+# Environment and Database files
 .env
 server/.env
+traffic-server/.env
+traffic-server/*.db
+traffic-server/__pycache__/
+traffic-server/test_*.py
 
 # IDE / tool metadata
 .cursor/
